@@ -1,28 +1,93 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { supabase } from "@/lib/supabase";
 
-const data = [
-  { name: 'Ene', ingresos: 4000, gastos: 2400 },
-  { name: 'Feb', ingresos: 3000, gastos: 1398 },
-  { name: 'Mar', ingresos: 2000, gastos: 9800 },
-  { name: 'Abr', ingresos: 2780, gastos: 3908 },
-  { name: 'May', ingresos: 1890, gastos: 4800 },
-  { name: 'Jun', ingresos: 2390, gastos: 3800 },
-  { name: 'Jul', ingresos: 3490, gastos: 4300 },
-];
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
-const pieData = [
-  { name: 'Alimentación', value: 400 },
-  { name: 'Transporte', value: 300 },
-  { name: 'Vivienda', value: 300 },
-  { name: 'Ocio', value: 200 },
-];
+interface ChartData {
+  name: string;
+  ingresos: number;
+  gastos: number;
+}
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+interface PieData {
+  name: string;
+  value: number;
+}
 
 export default function EstadisticasPage() {
+  const [barData, setBarData] = useState<ChartData[]>([]);
+  const [pieData, setPieData] = useState<PieData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const { data: transactions, error } = await supabase
+        .from("transactions")
+        .select("*")
+        .order("date", { ascending: true });
+
+      if (error) throw error;
+
+      if (!transactions) return;
+
+      // Process data for Bar Chart (Monthly)
+      const monthlyData: Record<string, { ingresos: number; gastos: number }> = {};
+      
+      transactions.forEach((t) => {
+        const date = new Date(t.date);
+        const monthYear = `${date.toLocaleString('default', { month: 'short' })} ${date.getFullYear()}`;
+        
+        if (!monthlyData[monthYear]) {
+          monthlyData[monthYear] = { ingresos: 0, gastos: 0 };
+        }
+
+        if (t.type === 'income') {
+          monthlyData[monthYear].ingresos += t.amount;
+        } else {
+          monthlyData[monthYear].gastos += t.amount;
+        }
+      });
+
+      const formattedBarData = Object.keys(monthlyData).map((key) => ({
+        name: key,
+        ingresos: monthlyData[key].ingresos,
+        gastos: monthlyData[key].gastos,
+      }));
+
+      setBarData(formattedBarData);
+
+      // Process data for Pie Chart (Expenses by Category)
+      const categoryData: Record<string, number> = {};
+      
+      transactions
+        .filter((t) => t.type === 'expense')
+        .forEach((t) => {
+          const category = t.category || "General";
+          categoryData[category] = (categoryData[category] || 0) + t.amount;
+        });
+
+      const formattedPieData = Object.keys(categoryData).map((key) => ({
+        name: key,
+        value: categoryData[key],
+      }));
+
+      setPieData(formattedPieData);
+
+    } catch (error) {
+      console.error("Error fetching statistics:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="p-8 space-y-8">
       <div>
@@ -30,63 +95,66 @@ export default function EstadisticasPage() {
         <p className="text-muted-foreground">Analiza tus tendencias financieras.</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card className="col-span-2">
-          <CardHeader>
-            <CardTitle>Ingresos vs Gastos</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                width={500}
-                height={300}
-                data={data}
-                margin={{
-                  top: 5,
-                  right: 30,
-                  left: 20,
-                  bottom: 5,
-                }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="ingresos" fill="#10b981" />
-                <Bar dataKey="gastos" fill="#f43f5e" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Distribución de Gastos</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-             <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
+      {loading ? (
+        <div>Cargando estadísticas...</div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card className="col-span-2">
+            <CardHeader>
+              <CardTitle>Ingresos vs Gastos (Mensual)</CardTitle>
+            </CardHeader>
+            <CardContent className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={barData}
+                  margin={{
+                    top: 5,
+                    right: 30,
+                    left: 20,
+                    bottom: 5,
+                  }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
                   <Tooltip />
                   <Legend />
-                </PieChart>
-             </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
+                  <Bar dataKey="ingresos" fill="#10b981" name="Ingresos" />
+                  <Bar dataKey="gastos" fill="#f43f5e" name="Gastos" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card className="col-span-2 md:col-span-1">
+            <CardHeader>
+              <CardTitle>Distribución de Gastos</CardTitle>
+            </CardHeader>
+            <CardContent className="h-[300px]">
+               <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
+                    <Legend />
+                  </PieChart>
+               </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
