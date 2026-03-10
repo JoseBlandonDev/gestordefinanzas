@@ -10,6 +10,7 @@ import {
   PieChart,
   Wallet,
   Settings,
+  Code,
 } from "lucide-react";
 
 const sidebarItems = [
@@ -37,6 +38,11 @@ const sidebarItems = [
     title: "Estadísticas",
     href: "/estadisticas",
     icon: PieChart,
+  },
+  {
+    title: "Dev Tools",
+    href: "/dev",
+    icon: Code,
   },
 ];
 

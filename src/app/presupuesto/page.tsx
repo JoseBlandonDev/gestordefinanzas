@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 interface Budget {
@@ -95,6 +95,23 @@ export default function PresupuestoPage() {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    if (!confirm("¿Estás seguro de que quieres eliminar este presupuesto?")) return;
+
+    try {
+      const { error } = await supabase
+        .from("budgets")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setBudgets(budgets.filter(b => b.id !== id));
+    } catch (error) {
+      console.error("Error deleting budget:", error);
+    }
+  };
+
   return (
     <div className="p-8 space-y-8">
       <div className="flex items-center justify-between">
@@ -150,9 +167,19 @@ export default function PresupuestoPage() {
             
             return (
               <Card key={budget.id}>
-                <CardHeader>
-                  <CardTitle>{budget.category}</CardTitle>
-                  <CardDescription>Límite mensual: ${budget.amount.toFixed(2)}</CardDescription>
+                <CardHeader className="flex flex-row items-start justify-between space-y-0">
+                  <div>
+                    <CardTitle>{budget.category}</CardTitle>
+                    <CardDescription>Límite mensual: ${budget.amount.toFixed(2)}</CardDescription>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    onClick={() => handleDelete(budget.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex justify-between text-sm">

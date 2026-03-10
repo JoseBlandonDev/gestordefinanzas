@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Trash2, Calendar } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 interface Transaction {
@@ -18,7 +18,12 @@ interface Transaction {
 export default function IngresosPage() {
   const [ingresos, setIngresos] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newIncome, setNewIncome] = useState({ description: "", amount: "", category: "" });
+  const [newIncome, setNewIncome] = useState({ 
+    description: "", 
+    amount: "", 
+    category: "",
+    date: new Date().toISOString().split('T')[0]
+  });
   const [isAdding, setIsAdding] = useState(false);
 
   useEffect(() => {
@@ -55,7 +60,7 @@ export default function IngresosPage() {
             amount: parseFloat(newIncome.amount),
             type: "income",
             category: newIncome.category || "General",
-            date: new Date().toISOString(),
+            date: newIncome.date,
           },
         ])
         .select();
@@ -63,10 +68,32 @@ export default function IngresosPage() {
       if (error) throw error;
 
       setIngresos([data[0], ...ingresos]);
-      setNewIncome({ description: "", amount: "", category: "" });
+      setNewIncome({ 
+        description: "", 
+        amount: "", 
+        category: "",
+        date: new Date().toISOString().split('T')[0]
+      });
       setIsAdding(false);
     } catch (error) {
       console.error("Error adding income:", error);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("¿Estás seguro de que quieres eliminar este ingreso?")) return;
+
+    try {
+      const { error } = await supabase
+        .from("transactions")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setIngresos(ingresos.filter(i => i.id !== id));
+    } catch (error) {
+      console.error("Error deleting income:", error);
     }
   };
 
@@ -91,7 +118,7 @@ export default function IngresosPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleAddIncome} className="space-y-4">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <input
                   type="text"
                   placeholder="Descripción"
@@ -103,6 +130,7 @@ export default function IngresosPage() {
                 <input
                   type="number"
                   placeholder="Monto"
+                  step="0.01"
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   value={newIncome.amount}
                   onChange={(e) => setNewIncome({ ...newIncome, amount: e.target.value })}
@@ -114,6 +142,13 @@ export default function IngresosPage() {
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   value={newIncome.category}
                   onChange={(e) => setNewIncome({ ...newIncome, category: e.target.value })}
+                />
+                <input
+                  type="date"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  value={newIncome.date}
+                  onChange={(e) => setNewIncome({ ...newIncome, date: e.target.value })}
+                  required
                 />
               </div>
               <Button type="submit">Guardar</Button>
@@ -149,13 +184,29 @@ export default function IngresosPage() {
           ) : (
             <div className="space-y-4">
               {ingresos.map((ingreso) => (
-                <div key={ingreso.id} className="flex items-center justify-between border-b pb-2 last:border-0">
-                  <div>
+                <div key={ingreso.id} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
+                  <div className="grid gap-1">
                     <p className="font-medium">{ingreso.description}</p>
-                    <p className="text-sm text-muted-foreground">{new Date(ingreso.date).toLocaleDateString()}</p>
+                    <div className="flex items-center text-sm text-muted-foreground gap-2">
+                      <span className="bg-secondary px-2 py-0.5 rounded text-xs">{ingreso.category}</span>
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {new Date(ingreso.date).toLocaleDateString()}
+                      </span>
+                    </div>
                   </div>
-                  <div className="font-bold text-emerald-500">
-                    +${ingreso.amount.toFixed(2)}
+                  <div className="flex items-center gap-4">
+                    <div className="font-bold text-emerald-500">
+                      +${ingreso.amount.toFixed(2)}
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      onClick={() => handleDelete(ingreso.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               ))}
