@@ -18,22 +18,31 @@ export const metadata: Metadata = {
   description: "Tu gestor de finanzas personales",
 };
 
+import { ThemeProvider } from "@/components/theme-provider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es">
+    <html lang="es" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased flex min-h-screen bg-background`}
       >
-        <aside className="hidden w-64 border-r bg-card md:block">
-          <Sidebar />
-        </aside>
-        <main className="flex-1 overflow-y-auto">
-          {children}
-        </main>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <aside className="hidden w-64 border-r bg-card md:block">
+            <Sidebar />
+          </aside>
+          <main className="flex-1 overflow-y-auto">
+            {children}
+          </main>
+        </ThemeProvider>
       </body>
     </html>
   );

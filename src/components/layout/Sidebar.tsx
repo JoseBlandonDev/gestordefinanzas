@@ -11,7 +11,11 @@ import {
   Wallet,
   Settings,
   Code,
+  Moon,
+  Sun,
 } from "lucide-react";
+import { useTheme } from "next-themes";
+import { Button } from "@/components/ui/button";
 
 const sidebarItems = [
   {
@@ -48,13 +52,23 @@ const sidebarItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { setTheme, theme } = useTheme();
 
   return (
     <div className="flex h-screen w-64 flex-col border-r bg-card">
-      <div className="p-6">
+      <div className="p-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight text-primary">
           Finanzas
         </h1>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        >
+          <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+          <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          <span className="sr-only">Toggle theme</span>
+        </Button>
       </div>
       <nav className="flex-1 space-y-1 px-4">
         {sidebarItems.map((item) => (
