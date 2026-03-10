@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowUpRight, ArrowDownRight, DollarSign, CreditCard, Wallet, Activity } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
+import { formatCurrency } from "@/lib/utils";
 
 interface Transaction {
   id: string;
@@ -98,7 +99,7 @@ export default function Dashboard() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${summary.totalBalance.toFixed(2)}</div>
+            <div className="text-2xl font-bold">{formatCurrency(summary.totalBalance)}</div>
           </CardContent>
         </Card>
         <Card>
@@ -107,7 +108,7 @@ export default function Dashboard() {
             <ArrowUpRight className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${summary.totalIncome.toFixed(2)}</div>
+            <div className="text-2xl font-bold">{formatCurrency(summary.totalIncome)}</div>
           </CardContent>
         </Card>
         <Card>
@@ -116,7 +117,7 @@ export default function Dashboard() {
             <ArrowDownRight className="h-4 w-4 text-rose-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${summary.totalExpenses.toFixed(2)}</div>
+            <div className="text-2xl font-bold">{formatCurrency(summary.totalExpenses)}</div>
           </CardContent>
         </Card>
         <Card>
@@ -125,7 +126,7 @@ export default function Dashboard() {
             <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${(summary.totalIncome - summary.totalExpenses).toFixed(2)}</div>
+            <div className="text-2xl font-bold">{formatCurrency(summary.totalIncome - summary.totalExpenses)}</div>
             <p className="text-xs text-muted-foreground">Disponible</p>
           </CardContent>
         </Card>
@@ -170,7 +171,7 @@ export default function Dashboard() {
                       <p className="text-sm text-muted-foreground">{t.category}</p>
                     </div>
                     <div className={`ml-auto font-medium ${t.type === 'income' ? 'text-emerald-500' : 'text-rose-500'}`}>
-                      {t.type === 'income' ? '+' : '-'}${t.amount.toFixed(2)}
+                      {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}
                     </div>
                   </div>
                 ))

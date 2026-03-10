@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { supabase } from "@/lib/supabase";
+import { formatCurrency } from "@/lib/utils";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
@@ -117,7 +118,7 @@ export default function EstadisticasPage() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
                   <YAxis />
-                  <Tooltip />
+                  <Tooltip formatter={(value: any) => formatCurrency(Number(value || 0))} />
                   <Legend />
                   <Bar dataKey="ingresos" fill="#10b981" name="Ingresos" />
                   <Bar dataKey="gastos" fill="#f43f5e" name="Gastos" />
@@ -147,7 +148,7 @@ export default function EstadisticasPage() {
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value: any) => `$${Number(value || 0).toFixed(2)}`} />
+                    <Tooltip formatter={(value: any) => formatCurrency(Number(value || 0))} />
                     <Legend />
                   </PieChart>
                </ResponsiveContainer>

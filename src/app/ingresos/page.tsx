@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Calendar } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { formatCurrency } from "@/lib/utils";
 
 interface Transaction {
   id: string;
@@ -164,7 +165,7 @@ export default function IngresosPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-emerald-500">
-              ${totalIngresos.toFixed(2)}
+              {formatCurrency(totalIngresos)}
             </div>
           </CardContent>
         </Card>
@@ -197,7 +198,7 @@ export default function IngresosPage() {
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="font-bold text-emerald-500">
-                      +${ingreso.amount.toFixed(2)}
+                      +{formatCurrency(ingreso.amount)}
                     </div>
                     <Button 
                       variant="ghost" 
