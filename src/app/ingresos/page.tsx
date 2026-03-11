@@ -33,10 +33,14 @@ export default function IngresosPage() {
 
   const fetchIngresos = async () => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
       const { data, error } = await supabase
         .from("transactions")
         .select("*")
         .eq("type", "income")
+        .eq("user_id", session.user.id)
         .order("date", { ascending: false });
 
       if (error) throw error;
@@ -53,10 +57,14 @@ export default function IngresosPage() {
     if (!newIncome.description || !newIncome.amount) return;
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No session");
+
       const { data, error } = await supabase
         .from("transactions")
         .insert([
           {
+            user_id: session.user.id,
             description: newIncome.description,
             amount: parseFloat(newIncome.amount),
             type: "income",

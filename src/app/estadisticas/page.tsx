@@ -30,9 +30,13 @@ export default function EstadisticasPage() {
 
   const fetchData = async () => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
       const { data: transactions, error } = await supabase
         .from("transactions")
         .select("*")
+        .eq("user_id", session.user.id)
         .order("date", { ascending: true });
 
       if (error) throw error;

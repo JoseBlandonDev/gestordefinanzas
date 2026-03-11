@@ -14,11 +14,14 @@ import {
   Moon,
   Sun,
   Menu,
+  LogOut,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { useState } from "react";
+import { supabase } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
 
 const sidebarItems = [
   {
@@ -56,6 +59,12 @@ const sidebarItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const { setTheme, theme } = useTheme();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
 
   return (
     <div className="flex h-full flex-col border-r bg-card">
@@ -90,7 +99,7 @@ export function Sidebar() {
           </Link>
         ))}
       </nav>
-      <div className="p-4 border-t">
+      <div className="p-4 border-t space-y-1">
         <Link
           href="/configuracion"
           className={cn(
@@ -103,6 +112,13 @@ export function Sidebar() {
           <Settings className="h-4 w-4" />
           Configuración
         </Link>
+        <button
+          onClick={handleLogout}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+        >
+          <LogOut className="h-4 w-4" />
+          Cerrar Sesión
+        </button>
       </div>
     </div>
   );
@@ -112,6 +128,12 @@ export function MobileNav() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const { setTheme, theme } = useTheme();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
 
   return (
     <div className="flex items-center justify-between p-4 border-b bg-card md:hidden">
@@ -157,7 +179,7 @@ export function MobileNav() {
                   </Link>
                 ))}
               </nav>
-              <div className="p-4 border-t">
+              <div className="p-4 border-t space-y-1">
                 <Link
                   href="/configuracion"
                   onClick={() => setOpen(false)}
@@ -171,6 +193,13 @@ export function MobileNav() {
                   <Settings className="h-5 w-5" />
                   Configuración
                 </Link>
+                <button
+                  onClick={handleLogout}
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <LogOut className="h-5 w-5" />
+                  Cerrar Sesión
+                </button>
               </div>
             </div>
           </SheetContent>

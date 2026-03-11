@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowUpRight, ArrowDownRight, DollarSign, CreditCard, Wallet, Activity } from "lucide-react";
@@ -25,16 +26,27 @@ export default function Dashboard() {
     totalIncome: 0,
     totalExpenses: 0,
   });
+  const router = useRouter();
 
   useEffect(() => {
-    fetchTransactions();
+    checkUser();
   }, []);
 
-  const fetchTransactions = async () => {
+  const checkUser = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      router.push("/login");
+    } else {
+      fetchTransactions(session.user.id);
+    }
+  };
+
+  const fetchTransactions = async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from("transactions")
         .select("*")
+        .eq("user_id", userId)
         .order("date", { ascending: false })
         .limit(5);
 
@@ -44,7 +56,8 @@ export default function Dashboard() {
       // Calculate summary
       const { data: allTransactions, error: allError } = await supabase
         .from("transactions")
-        .select("amount, type");
+        .select("amount, type")
+        .eq("user_id", userId);
 
       if (allError) throw allError;
 
@@ -68,6 +81,8 @@ export default function Dashboard() {
       setLoading(false);
     }
   };
+
+  if (loading) return null;
 
   return (
     <div className="min-h-screen bg-background p-8">
