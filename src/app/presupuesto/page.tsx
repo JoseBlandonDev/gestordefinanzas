@@ -77,6 +77,7 @@ export default function PresupuestoPage() {
   const [isAddIncomeOpen, setIsAddIncomeOpen] = useState(false);
   const [isMoveMoneyOpen, setIsMoveMoneyOpen] = useState(false);
   const [isExtraIncomeOpen, setIsExtraIncomeOpen] = useState(false);
+  const [isAdjustCapitalOpen, setIsAdjustCapitalOpen] = useState(false);
 
   // Form States
   const [newBudget, setNewBudget] = useState({ 
@@ -99,6 +100,9 @@ export default function PresupuestoPage() {
   const [moveAmount, setMoveAmount] = useState("");
   const [targetCategory, setTargetCategory] = useState("");
   const [extraIncomeCategory, setExtraIncomeCategory] = useState("");
+  const [adjustAmount, setAdjustCapitalAmount] = useState("");
+  const [adjustType, setAdjustType] = useState<'add' | 'subtract'>('add');
+  const [adjustCategory, setAdjustCategory] = useState("");
 
   useEffect(() => {
     checkConfiguration();
@@ -509,6 +513,33 @@ export default function PresupuestoPage() {
     }
   };
 
+  const handleAdjustCapital = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adjustAmount || !adjustCategory) return;
+    const amount = parseFloat(adjustAmount);
+    const finalAmount = adjustType === 'add' ? amount : -amount;
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No session");
+
+      await supabase.from("allocations").insert({
+        user_id: session.user.id,
+        category: adjustCategory,
+        amount: finalAmount,
+        description: adjustType === 'add' ? "Ajuste de Capital (Adición)" : "Ajuste de Capital (Retiro)",
+        date: new Date().toISOString()
+      });
+
+      setIsAdjustCapitalOpen(false);
+      setAdjustCapitalAmount("");
+      setAdjustCategory("");
+      fetchDashboardData();
+    } catch (error) {
+      console.error("Error adjusting capital:", error);
+    }
+  };
+
   const handleEditBudget = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedBudget || !editValue) return;
@@ -663,6 +694,9 @@ export default function PresupuestoPage() {
           ) : (
             <><Button variant="outline" onClick={handleStartMonth}><Calendar className="mr-2 h-4 w-4" /> Iniciar Mes</Button><Button onClick={() => setIsExtraIncomeOpen(true)} className="bg-emerald-600 hover:bg-emerald-700"><Plus className="mr-2 h-4 w-4" /> Ingreso Extra</Button></>
           )}
+          <Button variant="outline" onClick={() => setIsAdjustCapitalOpen(true)}>
+            <ArrowRightLeft className="mr-2 h-4 w-4" /> Ajustar Capital
+          </Button>
           <Button variant="outline" onClick={() => { if(confirm("¿Reconfigurar presupuesto?")) { setIsConfigured(false); setSetupStep('type_selection'); } }}><Settings className="mr-2 h-4 w-4" /></Button>
           <Dialog open={isAddBudgetOpen} onOpenChange={setIsAddBudgetOpen}>
             <DialogTrigger asChild><Button><Plus className="mr-2 h-4 w-4" /> Nueva Categoría</Button></DialogTrigger>
@@ -805,7 +839,7 @@ export default function PresupuestoPage() {
         <DialogContent><DialogHeader><DialogTitle>Editar Plan de {selectedBudget?.category}</DialogTitle></DialogHeader>
           <form onSubmit={handleEditBudget} className="space-y-4">
             <div className="space-y-2"><Label>{budgetType === 'variable' ? 'Nuevo Porcentaje (%)' : 'Nuevo Monto Fijo'}</Label><input type="number" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={editValue} onChange={(e) => setEditValue(e.target.value)} required step={budgetType === 'variable' ? "0.1" : "0.01"} /></div>
-            <div className="flex items-center space-x-2"><Switch checked={editIsSavings} onCheckedChange={(val) => { setEditIsSavings(val); if (val && (!editOverflowCategory || editOverflowCategory === "")) setEditOverflowCategory("none"); }} /><Label>Es Ahorro</Label></div>
+            <div className="flex items-center space-x-2"><Switch checked={editIsSavings} onCheckedChange={setEditIsSavings} /><Label>Es Ahorro</Label></div>
             {editIsSavings && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2"><Label>Tope Máximo</Label><input type="number" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={editSavingsCap} onChange={(e) => setEditSavingsCap(e.target.value)} /></div>
@@ -829,6 +863,60 @@ export default function PresupuestoPage() {
               </div>
             )}
             <DialogFooter><Button type="submit">Actualizar Plan</Button></DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Adjust Capital Modal */}
+      <Dialog open={isAdjustCapitalOpen} onOpenChange={setIsAdjustCapitalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ajustar Capital Inicial / Saldo</DialogTitle>
+            <DialogDescription>
+              Añade o resta dinero directamente a una categoría sin registrarlo como un ingreso o gasto del mes.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleAdjustCapital} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Tipo de Ajuste</Label>
+              <Select value={adjustType} onValueChange={(val: 'add' | 'subtract') => setAdjustType(val)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="add">Añadir Capital (+)</SelectItem>
+                  <SelectItem value="subtract">Restar Capital (-)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Monto</Label>
+              <input
+                type="number"
+                placeholder="0.00"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={adjustAmount}
+                onChange={(e) => setAdjustCapitalAmount(e.target.value)}
+                required
+                step="0.01"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Categoría a Ajustar</Label>
+              <Select value={adjustCategory} onValueChange={setAdjustCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona categoría" />
+                </SelectTrigger>
+                <SelectContent>
+                  {budgets.map(b => (
+                    <SelectItem key={b.id} value={b.category}>{b.category}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter>
+              <Button type="submit">Aplicar Ajuste</Button>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
