@@ -617,9 +617,11 @@ export default function PresupuestoPage() {
                               <SelectTrigger><SelectValue placeholder="Selecciona destino" /></SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="none">Ninguno</SelectItem>
-                                {setupBudgets.filter((_, i) => i !== index).map(b => (
-                                  <SelectItem key={b.category} value={b.category}>{b.category}</SelectItem>
-                                ))}
+                                {setupBudgets
+                                  .filter((b, i) => i !== index && b.category.trim() !== "")
+                                  .map(b => (
+                                    <SelectItem key={b.category} value={b.category}>{b.category}</SelectItem>
+                                  ))}
                               </SelectContent>
                             </Select>
                           </div>
@@ -686,9 +688,11 @@ export default function PresupuestoPage() {
                         <SelectTrigger><SelectValue placeholder="Destino" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">Ninguno</SelectItem>
-                          {budgets.map(b => (
-                            <SelectItem key={b.id} value={b.category}>{b.category}</SelectItem>
-                          ))}
+                          {budgets
+                            .filter(b => b.category.trim() !== "")
+                            .map(b => (
+                              <SelectItem key={b.id} value={b.category}>{b.category}</SelectItem>
+                            ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -814,9 +818,11 @@ export default function PresupuestoPage() {
                     <SelectTrigger><SelectValue placeholder="Destino" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Ninguno</SelectItem>
-                      {budgets.filter(b => b.id !== selectedBudget?.id).map(b => (
-                        <SelectItem key={b.id} value={b.category}>{b.category}</SelectItem>
-                      ))}
+                      {budgets
+                        .filter(b => b.id !== selectedBudget?.id && b.category.trim() !== "")
+                        .map(b => (
+                          <SelectItem key={b.id} value={b.category}>{b.category}</SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
