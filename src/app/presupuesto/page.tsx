@@ -208,7 +208,7 @@ export default function PresupuestoPage() {
         amount: budgetType === 'fixed' ? b.amount : 0,
         is_savings: b.is_savings,
         savings_cap: b.savings_cap ? parseFloat(b.savings_cap) : null,
-        overflow_category: b.overflow_category || null
+        overflow_category: (b.overflow_category && b.overflow_category !== "none") ? b.overflow_category : null
       }));
 
       await supabase.from("budgets").insert(newBudgets);
@@ -497,7 +497,7 @@ export default function PresupuestoPage() {
         amount: budgetType === 'fixed' ? val : 0,
         is_savings: newBudget.is_savings,
         savings_cap: newBudget.savings_cap ? parseFloat(newBudget.savings_cap) : null,
-        overflow_category: newBudget.overflow_category || null
+        overflow_category: (newBudget.overflow_category && newBudget.overflow_category !== "none") ? newBudget.overflow_category : null
       };
 
       await supabase.from("budgets").insert([budgetData]);
@@ -521,7 +521,7 @@ export default function PresupuestoPage() {
       const updates: any = {
         is_savings: editIsSavings,
         savings_cap: editSavingsCap ? parseFloat(editSavingsCap) : null,
-        overflow_category: editOverflowCategory || null
+        overflow_category: (editOverflowCategory && editOverflowCategory !== "none") ? editOverflowCategory : null
       };
       if (budgetType === 'variable') updates.percentage = val;
       else updates.amount = val;
@@ -612,7 +612,7 @@ export default function PresupuestoPage() {
                             <Label>Categoría de Excedente</Label>
                             <Select 
                               value={budget.overflow_category || "none"} 
-                              onValueChange={(val) => { const nb = [...setupBudgets]; nb[index].overflow_category = val === "none" ? "" : val; setSetupBudgets(nb); }}
+                              onValueChange={(val) => { const nb = [...setupBudgets]; nb[index].overflow_category = val; setSetupBudgets(nb); }}
                             >
                               <SelectTrigger><SelectValue placeholder="Selecciona destino" /></SelectTrigger>
                               <SelectContent>
@@ -673,7 +673,7 @@ export default function PresupuestoPage() {
                   <Select value={newBudget.group} onValueChange={(val) => setNewBudget({ ...newBudget, group: val })}><SelectTrigger><SelectValue placeholder="Selecciona un grupo" /></SelectTrigger><SelectContent>{BUDGET_GROUPS.map(group => <SelectItem key={group} value={group}>{group}</SelectItem>)}</SelectContent></Select>
                 </div>
                 <div className="space-y-2"><Label>{budgetType === 'variable' ? 'Porcentaje (%)' : 'Monto Fijo'}</Label><input type="number" placeholder={budgetType === 'variable' ? "Ej. 30" : "Ej. 500"} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={newBudget.value} onChange={(e) => setNewBudget({ ...newBudget, value: e.target.value })} required step={budgetType === 'variable' ? "0.1" : "0.01"} /></div>
-                <div className="flex items-center space-x-2"><Switch checked={newBudget.is_savings} onCheckedChange={(val) => setNewBudget({ ...newBudget, is_savings: val })} /><Label>Es Ahorro</Label></div>
+                <div className="flex items-center space-x-2"><Switch checked={newBudget.is_savings} onCheckedChange={(val) => setNewBudget({ ...newBudget, is_savings: val, overflow_category: val ? (newBudget.overflow_category || "none") : "" })} /><Label>Es Ahorro</Label></div>
                 {newBudget.is_savings && (
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2"><Label>Tope Máximo</Label><input type="number" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={newBudget.savings_cap} onChange={(e) => setNewBudget({ ...newBudget, savings_cap: e.target.value })} /></div>
@@ -681,7 +681,7 @@ export default function PresupuestoPage() {
                       <Label>Excedente a</Label>
                       <Select 
                         value={newBudget.overflow_category || "none"} 
-                        onValueChange={(val) => setNewBudget({ ...newBudget, overflow_category: val === "none" ? "" : val })}
+                        onValueChange={(val) => setNewBudget({ ...newBudget, overflow_category: val })}
                       >
                         <SelectTrigger><SelectValue placeholder="Destino" /></SelectTrigger>
                         <SelectContent>
@@ -801,7 +801,7 @@ export default function PresupuestoPage() {
         <DialogContent><DialogHeader><DialogTitle>Editar Plan de {selectedBudget?.category}</DialogTitle></DialogHeader>
           <form onSubmit={handleEditBudget} className="space-y-4">
             <div className="space-y-2"><Label>{budgetType === 'variable' ? 'Nuevo Porcentaje (%)' : 'Nuevo Monto Fijo'}</Label><input type="number" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={editValue} onChange={(e) => setEditValue(e.target.value)} required step={budgetType === 'variable' ? "0.1" : "0.01"} /></div>
-            <div className="flex items-center space-x-2"><Switch checked={editIsSavings} onCheckedChange={setEditIsSavings} /><Label>Es Ahorro</Label></div>
+            <div className="flex items-center space-x-2"><Switch checked={editIsSavings} onCheckedChange={(val) => { setEditIsSavings(val); if (val && !editOverflowCategory) setEditOverflowCategory("none"); }} /><Label>Es Ahorro</Label></div>
             {editIsSavings && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2"><Label>Tope Máximo</Label><input type="number" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={editSavingsCap} onChange={(e) => setEditSavingsCap(e.target.value)} /></div>
@@ -809,7 +809,7 @@ export default function PresupuestoPage() {
                   <Label>Excedente a</Label>
                   <Select 
                     value={editOverflowCategory || "none"} 
-                    onValueChange={(val) => setEditOverflowCategory(val === "none" ? "" : val)}
+                    onValueChange={(val) => setEditOverflowCategory(val)}
                   >
                     <SelectTrigger><SelectValue placeholder="Destino" /></SelectTrigger>
                     <SelectContent>
