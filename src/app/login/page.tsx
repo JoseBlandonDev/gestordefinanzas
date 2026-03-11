@@ -59,7 +59,7 @@ export default function LoginPage() {
       });
 
       if (error) throw error;
-      alert("Registro exitoso! Por favor inicia sesión.");
+      alert("¡Registro exitoso! Se ha enviado un correo de confirmación a " + email + ". Por favor, verifica tu bandeja de entrada antes de iniciar sesión.");
     } catch (err: any) {
       setError(err.message);
     } finally {
