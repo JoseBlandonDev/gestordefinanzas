@@ -66,7 +66,7 @@ export default function PresupuestoPage() {
       amount: 0, 
       is_savings: c.is_savings,
       savings_cap: "",
-      overflow_category: ""
+      overflow_category: "none"
     }))
   );
 
@@ -85,14 +85,14 @@ export default function PresupuestoPage() {
     group: "Gastos Diarios",
     is_savings: false,
     savings_cap: "",
-    overflow_category: ""
+    overflow_category: "none"
   });
   const [selectedBudget, setSelectedBudget] = useState<BudgetStatus | null>(null);
   const [expenseAmount, setExpenseAmount] = useState("");
   const [expenseDesc, setExpenseDesc] = useState("");
   const [editValue, setEditValue] = useState("");
   const [editSavingsCap, setEditSavingsCap] = useState("");
-  const [editOverflowCategory, setEditOverflowCategory] = useState("");
+  const [editOverflowCategory, setEditOverflowCategory] = useState("none");
   const [editIsSavings, setEditIsSavings] = useState(false);
   
   const [incomeAmount, setIncomeAmount] = useState("");
@@ -227,9 +227,7 @@ export default function PresupuestoPage() {
 
   const calculateAllocations = (amount: number, budgetsList: BudgetStatus[]) => {
     const allocations: { category: string, amount: number, description: string }[] = [];
-    const remainingToDistribute: { category: string, percentage: number, overflow_category: string | null, savings_cap: number | null, available: number }[] = [];
 
-    // First pass: Calculate initial allocations and identify potential overflows
     budgetsList.forEach(b => {
       const initialAmount = amount * ((b.percentage || 0) / 100);
       if (b.is_savings && b.savings_cap !== null) {
@@ -237,7 +235,6 @@ export default function PresupuestoPage() {
         const spaceLeft = Math.max(0, b.savings_cap - currentAvailable);
         
         if (initialAmount > spaceLeft) {
-          // Overflow occurs
           allocations.push({
             category: b.category,
             amount: spaceLeft,
@@ -251,10 +248,6 @@ export default function PresupuestoPage() {
               amount: overflow,
               description: `Excedente de ${b.category}`
             });
-          } else {
-            // If no overflow category, maybe put in "Otros" or keep in unassigned? 
-            // For now, let's assume it goes to unassigned if not specified, 
-            // but the user query implies it should go somewhere.
           }
         } else {
           allocations.push({
@@ -501,7 +494,7 @@ export default function PresupuestoPage() {
       };
 
       await supabase.from("budgets").insert([budgetData]);
-      setNewBudget({ category: "", value: "", group: "Gastos Diarios", is_savings: false, savings_cap: "", overflow_category: "" });
+      setNewBudget({ category: "", value: "", group: "Gastos Diarios", is_savings: false, savings_cap: "", overflow_category: "none" });
       setIsAddBudgetOpen(false);
       fetchDashboardData();
     } catch (error) {
@@ -628,7 +621,7 @@ export default function PresupuestoPage() {
                     </div>
                   </div>
                 ))}
-                <Button variant="outline" onClick={() => setSetupBudgets([...setupBudgets, { category: "", group: "Otros", percentage: 0, amount: 0, is_savings: false, savings_cap: "", overflow_category: "" }])}><Plus className="mr-2 h-4 w-4" /> Añadir Categoría</Button>
+                <Button variant="outline" onClick={() => setSetupBudgets([...setupBudgets, { category: "", group: "Otros", percentage: 0, amount: 0, is_savings: false, savings_cap: "", overflow_category: "none" }])}><Plus className="mr-2 h-4 w-4" /> Añadir Categoría</Button>
                 {budgetType === 'variable' && (
                   <div className="pt-4 text-right"><span className={`font-bold ${setupBudgets.reduce((acc, b) => acc + b.percentage, 0) !== 100 ? "text-destructive" : "text-green-600"}`}>Total: {setupBudgets.reduce((acc, b) => acc + b.percentage, 0)}%</span></div>
                 )}
@@ -673,14 +666,14 @@ export default function PresupuestoPage() {
                   <Select value={newBudget.group} onValueChange={(val) => setNewBudget({ ...newBudget, group: val })}><SelectTrigger><SelectValue placeholder="Selecciona un grupo" /></SelectTrigger><SelectContent>{BUDGET_GROUPS.map(group => <SelectItem key={group} value={group}>{group}</SelectItem>)}</SelectContent></Select>
                 </div>
                 <div className="space-y-2"><Label>{budgetType === 'variable' ? 'Porcentaje (%)' : 'Monto Fijo'}</Label><input type="number" placeholder={budgetType === 'variable' ? "Ej. 30" : "Ej. 500"} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={newBudget.value} onChange={(e) => setNewBudget({ ...newBudget, value: e.target.value })} required step={budgetType === 'variable' ? "0.1" : "0.01"} /></div>
-                <div className="flex items-center space-x-2"><Switch checked={newBudget.is_savings} onCheckedChange={(val) => setNewBudget({ ...newBudget, is_savings: val, overflow_category: val ? (newBudget.overflow_category || "none") : "" })} /><Label>Es Ahorro</Label></div>
+                <div className="flex items-center space-x-2"><Switch checked={newBudget.is_savings} onCheckedChange={(val) => setNewBudget({ ...newBudget, is_savings: val, overflow_category: val ? (newBudget.overflow_category || "none") : "none" })} /><Label>Es Ahorro</Label></div>
                 {newBudget.is_savings && (
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2"><Label>Tope Máximo</Label><input type="number" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={newBudget.savings_cap} onChange={(e) => setNewBudget({ ...newBudget, savings_cap: e.target.value })} /></div>
                     <div className="space-y-2">
                       <Label>Excedente a</Label>
                       <Select 
-                        value={newBudget.overflow_category || "none"} 
+                        value={newBudget.overflow_category} 
                         onValueChange={(val) => setNewBudget({ ...newBudget, overflow_category: val })}
                       >
                         <SelectTrigger><SelectValue placeholder="Destino" /></SelectTrigger>
@@ -725,7 +718,7 @@ export default function PresupuestoPage() {
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => { setSelectedBudget(budget); setEditValue(budgetType === 'variable' ? (budget.percentage?.toString() || "") : budget.amount.toString()); setEditIsSavings(budget.is_savings); setEditSavingsCap(budget.savings_cap?.toString() || ""); setEditOverflowCategory(budget.overflow_category || ""); setIsEditBudgetOpen(true); }}><Pencil className="mr-2 h-4 w-4" /> Editar Plan</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => { setSelectedBudget(budget); setEditValue(budgetType === 'variable' ? (budget.percentage?.toString() || "") : budget.amount.toString()); setEditIsSavings(budget.is_savings); setEditSavingsCap(budget.savings_cap?.toString() || ""); setEditOverflowCategory(budget.overflow_category || "none"); setIsEditBudgetOpen(true); }}><Pencil className="mr-2 h-4 w-4" /> Editar Plan</DropdownMenuItem>
                           <DropdownMenuItem onClick={() => { setSelectedBudget(budget); setIsMoveMoneyOpen(true); }}><ArrowRightLeft className="mr-2 h-4 w-4" /> Mover Dinero</DropdownMenuItem>
                           <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(budget.id)}><Trash2 className="mr-2 h-4 w-4" /> Eliminar</DropdownMenuItem>
                         </DropdownMenuContent>
@@ -757,7 +750,7 @@ export default function PresupuestoPage() {
         ))
       )}
 
-      {/* Modals (same as before but updated for new fields if needed) */}
+      {/* Modals */}
       <Dialog open={isAddIncomeOpen} onOpenChange={setIsAddIncomeOpen}>
         <DialogContent><DialogHeader><DialogTitle>Registrar Ingreso Variable</DialogTitle></DialogHeader>
           <form onSubmit={handleAddIncome} className="space-y-4">
@@ -801,14 +794,14 @@ export default function PresupuestoPage() {
         <DialogContent><DialogHeader><DialogTitle>Editar Plan de {selectedBudget?.category}</DialogTitle></DialogHeader>
           <form onSubmit={handleEditBudget} className="space-y-4">
             <div className="space-y-2"><Label>{budgetType === 'variable' ? 'Nuevo Porcentaje (%)' : 'Nuevo Monto Fijo'}</Label><input type="number" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={editValue} onChange={(e) => setEditValue(e.target.value)} required step={budgetType === 'variable' ? "0.1" : "0.01"} /></div>
-            <div className="flex items-center space-x-2"><Switch checked={editIsSavings} onCheckedChange={(val) => { setEditIsSavings(val); if (val && !editOverflowCategory) setEditOverflowCategory("none"); }} /><Label>Es Ahorro</Label></div>
+            <div className="flex items-center space-x-2"><Switch checked={editIsSavings} onCheckedChange={(val) => { setEditIsSavings(val); if (val && (!editOverflowCategory || editOverflowCategory === "")) setEditOverflowCategory("none"); }} /><Label>Es Ahorro</Label></div>
             {editIsSavings && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2"><Label>Tope Máximo</Label><input type="number" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={editSavingsCap} onChange={(e) => setEditSavingsCap(e.target.value)} /></div>
                 <div className="space-y-2">
                   <Label>Excedente a</Label>
                   <Select 
-                    value={editOverflowCategory || "none"} 
+                    value={editOverflowCategory} 
                     onValueChange={(val) => setEditOverflowCategory(val)}
                   >
                     <SelectTrigger><SelectValue placeholder="Destino" /></SelectTrigger>
