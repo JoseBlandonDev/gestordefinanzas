@@ -109,7 +109,12 @@ export default function PresupuestoPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const { data: settings } = await supabase.from("settings").select("*").eq("user_id", session.user.id);
+      const { data: settings, error: settingsError } = await supabase.from("settings").select("*");
+      if (settingsError) {
+        console.error("Error fetching settings:", settingsError);
+        setLoading(false);
+        return;
+      }
       const typeSetting = settings?.find(s => s.key === 'budget_type');
       
       if (typeSetting) {
@@ -132,7 +137,9 @@ export default function PresupuestoPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const { data: settingsData } = await supabase.from("settings").select("*").eq("user_id", session.user.id);
+      const { data: settingsData, error: settingsError } = await supabase.from("settings").select("*");
+      if (settingsError) throw settingsError;
+      
       const type = settingsData?.find(s => s.key === 'budget_type')?.value as 'fixed' | 'variable';
       const fixedIncomeVal = parseFloat(settingsData?.find(s => s.key === 'fixed_income_amount')?.value || "0");
       
